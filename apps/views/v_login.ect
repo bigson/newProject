@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<title>Đăng nhập - Đăng ký</title>
+	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico' />
+	<link rel="stylesheet" type="text/css" href="/static/css/style.css">
+</head>
+<body>
+<table border="0" cellpadding="0" class="main lr" id="wrapListChat">
+	<tr>
+		<td class="login-form">
+			<div class="wrap-fl">
+				<form method="post" id="formLogin">
+					<ul class="form-login">
+						<li class="form-control">
+							<input type="textbox" name="email" placeholder="email" value="<%- @lg_email%>" id='txtLEmail'>
+						</li>
+						<li class="form-control"><input type="password" name="password" placeholder="mật khẩu" id="txtLPassword"></li>
+						<li class="form-control"><input type="submit" class="login-submit" name="login" value="Đăng nhập"></li>
+						<li class="form-control error"><%- @lg_error%></li>
+					</ul>
+				</form>
+			</div>
+		</td>
+		<td class="register-form">
+			<!-- <div class="rf-spe"></div> -->
+			<div class="wrap-rf">
+				<form method="post" id="formRegister">
+					<ul class="form-register">
+						<li class="form-control"><input type="textbox" name="fullname" placeholder="Tên đầy đủ" value="<%- @rg_fullname %>" id='txtRFullname'></li>
+						<li class="form-control"><input type="textbox" name="email" placeholder="Email" value="<%- @rg_email %>" id="txtREmail"></li>
+						<li class="form-control"><input type="password" name="password" placeholder="Mật khẩu" id="txtRPassword"></li>
+						<li class="form-control"><input type="password" name="confirmPassword" placeholder="Mật khẩu" id="txtRConfirmPassword"></li>
+						<li class="form-control"><input type="submit" name="register" value="Đăng ký"></li>
+						<li class="form-control"><%- @rg_error%></li>
+					</ul>
+				</form>
+			</div>
+		</td>
+	</tr>
+	<tr>
+		<td class="benchmark" colspan="2">
+			Time: <%- @benchmark?.time%>s. Mem: <%- @benchmark?.memory %>Mb
+		</td>
+	</tr>
+</table>
+<script type="text/javascript" src="/static/js/jquery.js"></script>
+<script type="text/javascript">
+$(function(){
+	$('#formLogin').submit(function(){
+		var email = $('#txtLEmail'), password = $('#txtLPassword');
+		if(!validateEmail(email.val())){
+			alert('Email không đúng định dạng');
+			email.focus();
+			return false;
+		}
+		if(password.val() == ''){
+			alert('Mật khẩu là bắt buộc');
+			password.focus();
+			return false;
+		}
+		return true;
+	});
+	$('#formRegister').submit(function(){
+		var fullname = $('#txtRFullname'),
+			email = $('#txtREmail'),
+			password = $('#txtRPassword'),
+			confirmPassword = $('#txtRConfirmPassword');
+		if(fullname.val() ==  ''){
+			alert('Tên không được bỏ trống');
+			fullname.focus();
+			return false;
+		}
+		if(!validateEmail(email.val())){
+			alert('Email không đúng định dạng');
+			email.focus();
+			return false;
+		}
+		if(password.val() == ''){
+			alert('Mật khẩu không được bỏ trống');
+			password.focus();
+			return false;
+		}
+		if(password.val() != confirmPassword.val()){
+			alert('Mật khẩu không khớp');
+			confirmPassword.focus();
+			return false;
+		}
+		return true;
+	});
+
+	function validateEmail(email) {
+		var re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+		return re.test(email);
+	}
+});
+</script>
+</body>
+</html>

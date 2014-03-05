@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<title>Thông tin server</title>
+	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico' />
+	<link rel="stylesheet" type="text/css" href="/static/css/style.css">
+</head>
+<body>
+<div class="main" style="color: #000">
+	<table class="wrap-info" border="0" cellpadding="0">
+		<tr>
+			<td>Hostname:</td>
+			<td><%- @os?.hostname() %></td>
+		</tr>
+		<tr>
+			<td>Platform:</td>
+			<td><%- @os?.platform() %></td>
+		</tr>
+		<tr>
+			<td>Type:</td>
+			<td><%- @os?.type() %></td>
+		</tr>
+		<tr>
+			<td>Arch:</td>
+			<td><%- @os?.arch() %></td>
+		</tr>
+		<tr>
+			<td>Release:</td>
+			<td><%- @os?.release() %></td>
+		</tr>
+		<tr>
+			<td>Uptime:</td>
+			<td><%- @os?.uptime() %></td>
+		</tr>
+		<tr>
+			<td>Loadavg:</td>
+			<td><%- @os?.loadavg() %></td>
+		</tr>
+		<tr>
+			<td>Tmpdir:</td>
+			<td><%- @os?.tmpdir() %></td>
+		</tr>
+		<tr>
+			<td>Endianness:</td>
+			<td><%- @os?.endianness() %></td>
+		</tr>
+		<tr>
+			<td>Totalmem:</td>
+			<td><%- @os?.totalmem() %></td>
+		</tr>
+		<tr>
+			<td>Freemem:</td>
+			<td><%- @os?.freemem() %></td>
+		</tr>
+		<tr>
+			<td>Cpus:</td>
+			<td>
+			<% cpuObj = (cpu) -> %>
+				{model : <%- cpu.model%>, speed : <%- cpu.speed%>, times : <%- cpu.times%>}
+			<% end %>
+			<% for cpu in @os?.cpus() : %>
+				<%- cpuObj cpu %>
+			<% end %>
+			</td>
+		</tr>
+		<tr>
+			<td>NetworkInterfaces:</td>
+			<td><%- @os?.networkInterfaces() %></td>
+		</tr>
+		<tr>
+			<td>EOL:</td>
+			<td><%- @os?.EOL %></td>
+		</tr>
+	</table>
+	<div id="chartStatic" style="height: 400px;width: 500px;"></div>
+	<br><br><br><br>
+	<div id="chartStaticServer" style="height: 400px;width: 500px;"></div>
+	<br><br><br><br>
+	<div id="chartCountConnect" style="height: 400px;width: 500px;"></div>
+	<div class="benchmark" colspan="2">
+		Time: <%- @benchmark?.time%>s. Mem: <%- @benchmark?.memory %>Mb
+	</div>
+</div>
+
+<script type="text/javascript" src="/static/js/jquery.js"></script>
+<script type="text/javascript" src="/static/js/socket.io.min.js"></script>
+<script type="text/javascript" src="/static/js/highcharts.js"></script>
+<script type="text/javascript" src="/static/js/libs.js"></script>
+<script type="text/javascript">
+// $(function () {
+// 	$(document).ready(function() {
+
+		// SOCKET
+		var socket = io.connect('<%- @socketPath %>/staticserver', {
+			'sync disconnect on unload':false
+    // transports: ['xhr-polling']
+}), test = io.connect('<%- @socketPath %>');
+		test.on('bigson', function(data){
+			console.log(data);
+			test.emit('bigson', {a : 2});
+		});
+		console.log(socket);
+		setInterval(function(){
+			console.log('send data');
+		 socket.emit('data', { message : 23234234});
+
+		}, 1000);
+
+		Highcharts.setOptions({
+			global: {
+				useUTC: false
+			}
+		});
+
+		var chart;
+		$('#chartStatic').highcharts({
+			chart: {
+				type: 'spline',
+				animation: Highcharts.svg, // don't animate in old IE
+				marginRight: 10,
+				events: {
+					load: function(){
+						var series = this.series[0];
+						socket.on('data', function (data) {
+							console.log(data);
+							var x = (new Date()).getTime(), // current time
+								y = data.process.heapUsed/1048576;
+							series.addPoint([x, y], true, true);
+
+						});
+					}
+				}
+			},
+			title: {
+				text: 'RAM app use'
+			},
+			xAxis: {
+				type: 'datetime',
+				tickPixelInterval: 150
+			},
+			yAxis: {
+				title: {
+					text: 'Value'
+				},
+				plotLines: [{
+					value: 0,
+					width: 1,
+					color: '#808080'
+				}],
+				min : 0
+			},
+			tooltip: {
+				formatter: function() {
+						return '<b>'+ this.series.name +'</b><br/>'+
+						Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) +'<br/>'+
+						Highcharts.numberFormat(this.y, 2);
+				}
+			},
+			legend: {
+				enabled: false
+			},
+			exporting: {
+				enabled: false
+			},
+			series: [{
+				name: 'RAM use',
+				data: (function() {
+					// generate an array of random data
+					var data = [],
+						time = (new Date()).getTime(),
+						i;
+
+					for (i = -19; i <= 0; i++) {
+						data.push({
+							x: time + i * 1000,
+							y: 0
+						});
+					}
+					return data;
+				})()
+			}],
+			credits: {
+				enabled : true,
+				href : 'http://123doc.vn',
+				text : 'bigson'
+			}
+		});
+
+		$('#chartStaticServer').highcharts({
+			chart: {
+				type: 'spline',
+				animation: Highcharts.svg, // don't animate in old IE
+				marginRight: 10,
+				events: {
+					load: function(){
+						var seriesTotal = this.series[0],
+							seriesFree = this.series[1];
+						socket.on('data', function (data) {
+							console.log(data);
+							var x = (new Date()).getTime(), // current time
+								y1 = data.os.totalRam/1048576,
+								y2 = data.os.freemem/1048576;
+							seriesTotal.addPoint([x, y1], true, true);
+							seriesFree.addPoint([x, y2], true, true);
+						});
+					}
+				}
+			},
+			title: {
+				text: 'RAM server'
+			},
+			xAxis: {
+				type: 'datetime',
+				tickPixelInterval: 150
+			},
+			yAxis: {
+				title: {
+					text: 'Value'
+				},
+				plotLines: [{
+					value: 0,
+					width: 1,
+					color: '#808080'
+				}],
+				min : 0
+			},
+			tooltip: {
+				formatter: function() {
+						return '<b>'+ this.series.name +'</b><br/>'+
+						Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) +'<br/>'+
+						Highcharts.numberFormat(this.y, 2);
+				}
+			},
+			legend: {
+				enabled: false
+			},
+			exporting: {
+				enabled: false
+			},
+			series: [{
+				name: 'Total MEMORY',
+				data: (function() {
+					// generate an array of random data
+					var data = [],
+						time = (new Date()).getTime(),
+						i;
+
+					for (i = -19; i <= 0; i++) {
+						data.push({
+							x: time + i * 1000,
+							y: 0
+						});
+					}
+					return data;
+				})()
+			},
+			{
+				name: 'Free MEMORY',
+				data: (function() {
+					// generate an array of random data
+					var data = [],
+						time = (new Date()).getTime(),
+						i;
+
+					for (i = -19; i <= 0; i++) {
+						data.push({
+							x: time + i * 1000,
+							y: 0
+						});
+					}
+					return data;
+				})()
+			}],
+			credits: {
+				enabled : true,
+				href : 'http://123doc.vn',
+				text : 'bigson'
+			}
+		});
+
+		$('#chartCountConnect').highcharts({
+			chart: {
+				type: 'spline',
+				animation: Highcharts.svg, // don't animate in old IE
+				marginRight: 10,
+				events: {
+					load: function(){
+						var series = this.series[0];
+						socket.on('data', function (data) {
+							console.log(data);
+							var x = (new Date()).getTime(), // current time
+								y = data.connect;
+							series.addPoint([x, y], true, true);
+
+						});
+					}
+				}
+			},
+			title: {
+				text: 'Num connect server'
+			},
+			xAxis: {
+				type: 'datetime',
+				tickPixelInterval: 150
+			},
+			yAxis: {
+				title: {
+					text: 'Value'
+				},
+				plotLines: [{
+					value: 0,
+					width: 1,
+					color: '#808080'
+				}],
+				min : 0
+			},
+			tooltip: {
+				formatter: function() {
+						return '<b>'+ this.series.name +'</b><br/>'+
+						Highcharts.dateFormat('%Y-%m-%d %H:%M:%S', this.x) +'<br/>'+
+						Highcharts.numberFormat(this.y, 2);
+				}
+			},
+			legend: {
+				enabled: false
+			},
+			exporting: {
+				enabled: false
+			},
+			series: [{
+				name: 'Num Connect',
+				data: (function() {
+					// generate an array of random data
+					var data = [],
+						time = (new Date()).getTime(),
+						i;
+
+					for (i = -19; i <= 0; i++) {
+						data.push({
+							x: time + i * 1000,
+							y: 0
+						});
+					}
+					return data;
+				})()
+			}],
+			credits: {
+				enabled : true,
+				href : 'http://123doc.vn',
+				text : 'bigson'
+			}
+		});
+// 	});
+// });
+
+function startSocket(_this){
+
+}
+</script>
+</body>
+</html>

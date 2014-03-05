@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<title>Danh sách người dùng</title>
+	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico' />
+	<link rel="stylesheet" type="text/css" href="/static/css/style.css">
+</head>
+<body>
+<div class="main dashboard">
+	<input type="checkbox" id='cbToggleMenu' class="cb-toggle-menu">
+	<div class="main-left">
+		<div class="wrap-list-user">
+			<ul class="list-user" id="listUser">
+			<% for user in @listCustomer : %>
+				<li class="item" data-id="<%- user.id %>">
+				    <img class="img<% if user.listSocketId.length > 0 : %> online<% end %>" src="/static/img/default-avatar.png" alt="<%- user.username%>" title="<%- user.username%>" onclick="openUser(event, this)">
+				</li>
+			<% end %>
+			</ul>
+		</div>
+	</div>
+	<div class="main-center">
+		<div class="mc-header">
+			<label for="cbToggleMenu" class="btn-toggle-menu">
+				<i></i><i></i><i></i>
+			</label>
+		</div>
+		<table border="0" cellpadding="0" class="wrap-center" id="wrapListChat">
+			<thead><tr class="row-head"><td></td><td></td></tr></thead>
+			<tbody data-id="0">
+				<tr>
+					<td class="col-rborder td-chat">
+						<h2>Bắt đầu chat nào </h2>
+					</td>
+					<td style="height:100%;">
+					</td>
+				</tr>
+				<tr class="row-footer">
+					<td class="col-rborder"></td>
+					<td></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>
+<script type="text/javascript" src="/static/js/jquery.js"></script>
+<script type="text/javascript" src="/static/js/socket.io.min.js"></script>
+<script type="text/javascript" src="/static/js/libs.js"></script>
+<script type="text/javascript">
+	var isIE = /*@cc_on!@*/false || !!document.documentMode;
+	if(isIE){
+		alert('run IE');
+		var viewportwidth, viewportheight;
+		if (typeof window.innerWidth != 'undefined'){
+		    // the more standards compliant browsers (mozilla/netscape/opera/IE7) use window.innerWidth and window.innerHeight
+		    viewportwidth = window.innerWidth,
+		    viewportheight = window.innerHeight
+		}else if (typeof document.documentElement != 'undefined'
+		&& typeof document.documentElement.clientWidth !=
+		'undefined' && document.documentElement.clientWidth != 0){
+		    // IE6 in standards compliant mode (i.e. with a valid doctype as the first line in the document)
+		    viewportwidth = document.documentElement.clientWidth,
+		    viewportheight = document.documentElement.clientHeight
+		}else{
+		    // older versions of IE
+		    viewportwidth = document.getElementsByTagName('body')[0].clientWidth,
+		    viewportheight = document.getElementsByTagName('body')[0].clientHeight
+		}
+		$('.td-chat').height(viewportheight - 51 - 110);
+	}
+// SLIDE
+	$(".wrap-list-user").mCustomScrollbar({
+	    theme:"light",
+	    advanced:{
+	        updateOnContentResize: true,
+	         autoScrollOnFocus: true
+	    },
+	    scrollButtons:{
+		    enable: false
+		},
+		set_height : true
+	});
+	$('.content-chat').mCustomScrollbar({
+    theme:"dark",
+    advanced:{
+        updateOnContentResize: true,
+         autoScrollOnFocus: true
+    },
+    scrollButtons:{
+	    enable: false
+	},
+	set_height : true
+});
+// TEMPLATE
+var renderer = ECT({ root :
+		{
+			listUser : tmpl.item_listUser,
+			listMessage : tmpl.item_listMessage,
+			listMessageChild : tmpl.item_listMessageChild,
+			listChat : tmpl.item_listChat
+		}
+	});
+
+// SOCKET
+	var supporterId = '<%- @supporterId %>',
+		supporterName = '<%- @supporterName %>',
+		socket = io.connect('<%- @socketPath %>/supporter'),
+		messageBox = document.querySelector('.text-message'),
+		displayMessage = document.querySelector('#wrapChat');
+
+	socket.on('c_receive', function (data) {
+		console.log('c_receive',data);
+		ReceiveMessage(data);
+	})
+	.on('c_customer_online', function(data){
+		// console.log('c_customer_online',data);
+		var customer = $('.item[data-id="'+data.customerId+'"]', '#listUser');
+		console.log('.item[data-id="'+data.customerId+'"]');
+		if(customer.length == 0){
+			addUserListChat(data);
+		}else{
+			console.log(customer);
+			customer.children('.img').addClass('online');
+		}
+	})
+	.on('c_customer_offline', function(data){
+		console.log(data);
+		var customer = $('.item[data-id="'+data.customerId+'"]', '#listUser');
+		console.log(customer, '.item[data-id="'+data.customerId+'"]');
+		customer.children('.img').removeClass('online');
+	})
+	.on('c_user_addnew', function(data){
+		console.log(data);
+		$('#listUser').append(renderer.render('listUser', { id: data.customerId }));
+	})
+	.on('error', function (data) {
+		console.error(data);
+	});
+
+	function openUser(e, _this){
+		console.log('click');
+		var customerId = $(_this).parent().data('id'), chat = $('#'+customerId);
+		console.log(customerId, _this);
+
+		// ẩn đi các khung chát #
+		$('tbody', '#wrapListChat').addClass('hidden');
+		if(chat.length == 0){
+			// chưa có chat này
+			AddFrameChat(customerId, '');
+		}else{
+			// đã chat vs user này
+			chat.removeClass('hidden');
+		}
+		$('.ext-message', chat).focus();
+	};
+
+	// $(document).on('keypress','.text-message',function(e){
+	// 	e = e || window.event;
+	// 	var charCode = e.keyCode || e.which, customerId = $(this).parents('tbody').attr('id');
+	//     if (charCode == 13) {
+	//         // alert("Enter");
+	//         socket.emit('s_receive', { message : this.value, time : new Date().getTime(), customerId : customerId, id : id});
+	//         this.value = '';
+	//         e.preventDefault();
+	//     }
+	// });
+	/*$('.text-message').on('keypress',function(e){
+		e = e || window.event;
+		var charCode = e.keyCode || e.which, customerId = $(this).parents('tbody').attr('id');
+	    if (charCode == 13) {
+	        // alert("Enter");
+	        socket.emit('s_receive', { message : this.value, time : new Date().getTime(), customerId : customerId, id : id});
+	        this.value = '';
+	        e.preventDefault();
+	    }
+	});*/
+
+	function sendMessage(e, _this){
+		e = e || window.event;
+		var charCode = e.keyCode || e.which, customerId = $(_this).parents('tbody').attr('id');
+		// console.log(charCode, customerId);
+	    if (charCode == 13) {
+	        // alert("Enter");
+	        var message = _this.value, time = new Date().getTime();
+	        socket.emit('s_receive', { message : message, time : time, customerId : customerId});
+	        _this.value = '';
+	        // console.log(this);
+	        AddMessage(customerId, {className : 'me', name : supporterName, message: message, time : time});
+	        e.preventDefault();
+	    }
+	}
+	function ReceiveMessage(data){
+		console.log(data);
+		var className = 'you', _id = data.customerId, chat;
+		if(data.fromId == supporterId){
+			className = 'me';
+		}
+
+		if($('#'+_id).length == 0){
+			AddFrameChat(_id, 'hidden');
+		}
+		AddMessage(_id, {className : className, name : data.fromUsername, message : data.message, time: data.time});
+	}
+	function AddFrameChat(_id, _class){
+		$('#wrapListChat').append(renderer.render('listChat',{customerId : _id, _class : _class}));
+		$(".content-chat", '#'+_id).mCustomScrollbar({
+		    theme:"dark",
+		    advanced:{
+		        updateOnContentResize: true,
+		        autoScrollOnFocus: true
+		    },
+		    scrollButtons:{
+			    enable: false
+			},
+			set_height : true
+		});
+	}
+	function addUserListChat(data){
+		$('#listUser').prepend(renderer.render('listUser',{id : data.customerId, name : data.customerUsername}));
+	}
+	function AddMessage(_id, data){
+		console.log(_id);
+		var chat = $('#'+_id),
+			contentChat = $('.content-chat .mCSB_container', chat),
+			listLi = $('li',contentChat),
+			lastListLi = $(listLi[listLi.length -1]),
+			listMessage = lastListLi ? lastListLi.parent() : null,
+			parentLastLi = listMessage ? listMessage.parent() : null,
+			element,div,
+			date = new Date(data.time),
+			obj = {className : data.className,
+					name : data.name,
+					message : validString(data.message),
+					time: data.time,
+					strTime : date.getDate()+'/'+(date.getMonth()+1)+'/'+date.getFullYear()+' '+date.getHours()+':'+date.getMinutes()};
+
+		if(!lastListLi || parseInt(lastListLi.data('time')) - data.time > 6000 || !parentLastLi.hasClass(data.className)){
+			element = renderer.render('listMessage',obj);
+			contentChat.append(element);
+		}else{
+			// ghi thêm vào
+			element = renderer.render('listMessageChild',obj);
+			listMessage.append(element);
+		}
+	}
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<tr>
+	<td class="col-info">
+		<div class="wrap-info">
+			<div class="wrap-avatar"><img class="avatar"></div>
+			<div class="u-wrap">
+				<div class="u-name">Nhân viên hỗ trợ</div>
+				<div class="u-blast">Niềm tin mua sắm</div>
+			</div>
+		</div>
+	</td>
+</tr>
+<tr>
+	<td class="col-cent">
+		<ul class="wrap-content-chat">
+		</ul>
+	</td>
+</tr>
+<tr>
+	<td class="row-chat">
+		<div class="wrap-text-message">
+			<textarea id="textMessage" class="text-message"></textarea>
+		</div>
+	</td>
+</tr>
+<script type="text/javascript" src="/static/js/socket.io.min.js"></script>
+<script type="text/javascript" src="/static/js/libs.js"></script>
+<script type="text/javascript" src="/static/js/template.js"></script>
+<script>
+// TEMPLATE
+	var renderer = ECT(
+		{ root :
+			{
+				listUser : tmpl.item_listUser,
+				listMessage : tmpl.item_listMessage,
+				listMessageChild : tmpl.item_listMessageChild,
+				listChat : tmpl.item_listChat
+			}
+		}),
+		customerId = '<%- @customerId%>',
+		site = '<%- @siteId %>',
+		username = '<%- @username%>',
+		supporterId = '<%- @supporterId%>',
+		socket = io.connect('<%- @socketPath %>/customer', { query: "site="+site+"&supporter="+supporterId}),
+		messageBox = document.querySelector('#textMessage'),
+		displayMessage = document.querySelector('#wrapChat');
+
+	socket.on('c_receive', function (data) {
+		// console.log(data, data.fromId ,customerId);
+		AddMessage({className : (data.fromId == customerId) ? 'me' : 'you', name : data.fromUsername, time : data.time, message : data.message});
+	})
+	.on('c_supporter_online', function (data) {
+		console.log(data);
+	})
+	.on('c_supporter_offline', function (data) {
+		console.log(data);
+	})
+	.on('error', function (data) {
+		console.log(data);
+	});
+
+	addEventListener(messageBox, 'keypress',
+		function(e){
+			e = e || window.event;
+			var charCode = e.keyCode || e.which, time = new Date().getTime(), message = validString(this.value);
+		    if (charCode == 13) {
+		        // alert("Enter");
+		        socket.emit('s_receive', { message : message, time : time});
+		        AddMessage({className : 'me', name : username, time : time, message : message});
+		        this.value = '';
+		        e.preventDefault();
+		    }
+		}
+	);
+
+	function AddMessage(data){
+		// console.log(data);
+		var contentChat = document.querySelector('.wrap-content-chat'),
+			listLi = contentChat.querySelectorAll('li'),
+			lastListLi = listLi[listLi.length -1],
+			listMessage = lastListLi ? lastListLi.parentNode : null,
+			parentLastLi = listMessage ? listMessage.parentNode : null,
+			element,div,
+			date = new Date(data.time),
+			obj = {className : data.className,
+					name : data.name,
+					message : validString(data.message),
+					time: data.time,
+					strTime : date.getDate()+'/'+(date.getMonth()+1)+'/'+date.getFullYear()+' '+date.getHours()+':'+date.getMinutes()};
+
+		// nếu không quá 1 phút, hoặc # class name thì ghi tiếp vào nội dung đang chat
+		if(!lastListLi || parseInt(lastListLi.getAttribute('data-time')) - data.time > 6000 || parentLastLi.className != data.className){
+			element = renderer.render('listMessage',obj);
+			div = document.createElement('div');
+			div.innerHTML = element;
+			contentChat.appendChild(div.childNodes[0]);
+		}else{
+			// ghi thêm vào
+			element = renderer.render('listMessageChild',obj);
+			div = document.createElement('div');
+			div.innerHTML = element;
+			listMessage.appendChild(div.childNodes[0]);
+		}
+	}
+</script>

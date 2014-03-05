@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title></title>
+	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico' />
+	<link rel="stylesheet" type="text/css" href="/static/css/styleEmbed.css">
+</head>
+<body>
+<div class="main">
+<table border="0" cellpadding="0" class="wrap-center">
+	<tr>
+		<td class="row-header">
+			<div class="title">Chào mừng</div>
+		</td>
+	</tr>
+<% if @offline : %>
+	<% include 'v_chatEmbed_offline.ect' %>
+<% else if @showLogin : %>
+	<% include 'v_chatEmbed_login.ect' %>
+<% else : %>
+	<% include 'v_chatEmbed_success.ect' %>
+<% end %>
+
+	<tr>
+		<td class="row-footer">
+			<a class="copyright" href="#">Powered by Bigson</a>
+		</td>
+	</tr>
+</table>
+</div>
+</body>
+</html>

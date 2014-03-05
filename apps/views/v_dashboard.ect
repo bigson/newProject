@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+	<title>Dashboard</title>
+	<link rel='shortcut icon' type='image/x-icon' href='/favicon.ico' />
+	<link rel="stylesheet" type="text/css" href="/static/css/style.css">
+</head>
+<body>
+<div class="main">
+	<div class="">
+		Mã <h1><%- @siteId %></h1>
+	</div>
+</div>
+<div class="benchmark" colspan="2">
+	Time: <%- @benchmark?.time%>s. Mem: <%- @benchmark?.memory %>Mb
+</div>
+<script type="text/javascript" src="/static/js/jquery.js"></script>
+</body>
+</html>

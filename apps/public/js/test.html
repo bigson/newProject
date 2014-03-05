@@ -1,0 +1,80 @@
+<html>
+<head></head>
+<body>
+
+<script type="text/javascript" src="socket.io.min.js"></script>
+<script>
+
+  var chat = io.connect('http://io.schat.vn:3001/supporter')
+    , news = io.connect('http://io.schat.vn:3001/customer');
+
+
+    chat.emit('s_receive', {sdaf: 234243, safd:3});
+
+
+  news.on('news', function () {
+    news.emit('woot');
+  });
+/*
+	var len = 8;
+  	// var group = {};
+	for (var i = 0; i < len; i++) {
+		window['group'+i] = [];
+		var arr = window['group'+i];
+		for (var j = 0; j < len - 1; j++) {
+			arr.push([i+1]);
+		};
+	};
+
+	// điền giá trị cho group 1;
+	var start = len + 1;
+	for (var i = 0; i < group1.length; i++) {
+		var arr = [];
+		for (var j = 0; j < len-1; j++) {
+			group0[i].push(start);
+			start++;
+		};
+	};
+
+	// điền hàng dọc của các mảng
+	for (var i = 1; i < len; i++) {
+		var arr = window['group'+i];
+		// console.log(arr);
+		for (var j = 0; j < len-1; j++) {
+			arr[j].push(group0[0][j+1]);
+		}
+	};
+
+	for(var k = 1; k < len; k ++){
+		var value = group0[k];
+		process(value);
+	}
+
+	function process(value){
+		value.splice(0,1);
+		// console.log(value);
+		for(var i = 1; i< len; i++){
+			var arr = window['group'+i];
+			for(var j = 0; j < len ; j++){
+				arr[j].push(value[j]);
+			}
+			value = tinhtien(value, i);
+		}
+		console.log(group2);
+	}
+
+	function tinhtien(arr, index){
+		var start = arr[0];
+		for(var i = 0; i< arr.length-1; i++){
+			if(i+index < arr.length-1){
+				arr[i]=arr[i+index];
+			}else{
+				arr[i] = arr[i+index - arr.length];
+			}
+		}
+		// arr[length-1] =  start;
+		return arr;
+	}*/
+</script>
+</body>
+</html>
